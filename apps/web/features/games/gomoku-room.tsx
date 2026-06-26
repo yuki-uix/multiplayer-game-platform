@@ -23,6 +23,7 @@ export function GomokuRoom({ roomId }: GomokuRoomProps) {
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
+    // Note: reset in cleanup so React Strict Mode's second run reconnects correctly
 
     const player = getOrCreatePlayer();
     setMe(player);
@@ -63,6 +64,7 @@ export function GomokuRoom({ roomId }: GomokuRoomProps) {
     });
 
     return () => {
+      initialized.current = false;
       if (!isNew && room) {
         socket.emit("client:room:leave", { roomId, playerId: player.id });
       }
