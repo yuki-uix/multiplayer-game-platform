@@ -1,11 +1,14 @@
 import type { ClientToServerEvents, ServerToClientEvents } from "@mgp/shared";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { createRoom, getRoom, joinRoom, leaveRoom } from "../rooms/room-store";
 
 type PlatformServer = Server<ClientToServerEvents, ServerToClientEvents>;
+type PlatformSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
+
+const socketPlayerMap = new Map<string, { roomId: string; playerId: string }>();
 
 export function registerRoomSockets(io: PlatformServer) {
-  io.on("connection", (socket) => {
+  io.on("connection", (socket: PlatformSocket) => {
     socket.on("client:room:create", ({ game }, acknowledge) => {
       const room = createRoom(game);
       socket.join(room.id);
@@ -21,6 +24,7 @@ export function registerRoomSockets(io: PlatformServer) {
         return;
       }
 
+      socketPlayerMap.set(socket.id, { roomId, playerId: player.id });
       socket.join(roomId);
       acknowledge?.({ ok: true });
       io.to(roomId).emit("server:room:state", { room });
@@ -28,10 +32,22 @@ export function registerRoomSockets(io: PlatformServer) {
     });
 
     socket.on("client:room:leave", ({ roomId, playerId }) => {
+      socketPlayerMap.delete(socket.id);
       const room = leaveRoom(roomId, playerId);
       socket.leave(roomId);
       if (room) {
         io.to(roomId).emit("server:room:state", { room });
+      }
+    });
+
+    socket.on("disconnect", () => {
+      const entry = socketPlayerMap.get(socket.id);
+      if (entry) {
+        socketPlayerMap.delete(socket.id);
+        const room = leaveRoom(entry.roomId, entry.playerId);
+        if (room) {
+          io.to(entry.roomId).emit("server:room:state", { room });
+        }
       }
     });
 
@@ -41,7 +57,6 @@ export function registerRoomSockets(io: PlatformServer) {
         socket.emit("server:error", { message: "Room not found" });
         return;
       }
-
       socket.emit("server:error", { message: "Game actions are not wired yet" });
     });
   });
