@@ -13,7 +13,8 @@
     "baseUrl": ".",
     "paths": {
       "@mgp/shared": ["packages/shared/src/index.ts"],
-      "@mgp/gomoku": ["packages/games/gomoku/src/index.ts"]
+      "@mgp/gomoku": ["packages/games/gomoku/src/index.ts"],
+      "@mgp/ninja": ["packages/games/ninja/src/index.ts"]
     }
   }
 }
