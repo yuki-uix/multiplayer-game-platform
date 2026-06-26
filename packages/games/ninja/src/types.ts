@@ -69,6 +69,17 @@ export type DraftState = {
 export type PlayedCardEntry = {
   playerId: string;
   card: NinjaCard;
+  targetPlayerId?: string; // for blind_assassin / master_ninja
+};
+
+/**
+ * When a kill card resolves against a target who holds a reaction card,
+ * we pause resolution and wait for their reaction (or explicit pass).
+ */
+export type PendingReaction = {
+  attackerId: string;
+  targetId: string;
+  attackCard: NinjaCard;
 };
 
 export type NightState = {
@@ -77,6 +88,17 @@ export type NightState = {
   playedThisPhase: PlayedCardEntry[];
   /** Players who have declared done for the current sub-phase (pass or played) */
   doneByPlayer: Set<string>;
+  /**
+   * How many entries in sorted playedThisPhase have already been fully resolved.
+   * advanceNightIfAllDone resumes from this index so reaction handling never
+   * re-processes already-settled attack entries.
+   */
+  resolvedCount: number;
+  /**
+   * Non-null when a kill is pending and the target may react.
+   * Resolution is paused until the target plays a reaction card or passes.
+   */
+  pendingReaction: PendingReaction | null;
 };
 
 // ── Round phases ──────────────────────────────────────────────────────────────
@@ -157,4 +179,6 @@ export type NinjaPublicState = {
   winners: string[] | null;
   /** Draft: how many players still need to pick (so UI can show "waiting for N") */
   draftPendingCount: number;
+  /** Non-null when a reaction window is open; only the target may act */
+  pendingReaction: PendingReaction | null;
 };
