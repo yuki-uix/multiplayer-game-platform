@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { socket } from "../../lib/socket";
 import { getOrCreatePlayer } from "../../lib/player";
@@ -14,61 +14,61 @@ type GomokuRoomProps = {
 export function GomokuRoom({ roomId }: GomokuRoomProps) {
   const router = useRouter();
   const isNew = roomId === "new";
-  const initialized = useRef(false);
 
   const { connection, room, me, setConnection, setRoom, setMe } = useRoomStore();
 
   const cells = useMemo(() => Array.from({ length: 15 * 15 }), []);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    // Note: reset in cleanup so React Strict Mode's second run reconnects correctly
-
+    let active = true;
     const player = getOrCreatePlayer();
     setMe(player);
-
     setConnection("connecting");
     socket.connect();
 
-    socket.on("connect", () => {
+    function onConnect() {
+      if (!active) return;
       setConnection("connected");
 
       if (isNew) {
         socket.emit("client:room:create", { game: "gomoku" }, (payload: { roomId: string }) => {
-          router.replace(`/game/gomoku/${payload.roomId}`);
+          if (active) router.replace(`/game/gomoku/${payload.roomId}`);
         });
       } else {
         socket.emit("client:room:join", { roomId, player }, (payload: { ok: boolean }) => {
-          if (!payload.ok) {
-            router.replace("/");
-          }
+          if (active && !payload.ok) router.replace("/");
         });
       }
-    });
+    }
 
-    socket.on("server:room:state", ({ room: updatedRoom }) => {
-      setRoom(updatedRoom);
-    });
+    function onRoomState({ room: r }: { room: RoomState }) {
+      if (active) setRoom(r);
+    }
 
-    socket.on("server:room:created", ({ room: createdRoom }) => {
-      setRoom(createdRoom);
-    });
+    function onRoomCreated({ room: r }: { room: RoomState }) {
+      if (active) setRoom(r);
+    }
 
-    socket.on("server:room:joined", ({ room: joinedRoom }) => {
-      setRoom(joinedRoom);
-    });
+    function onRoomJoined({ room: r }: { room: RoomState }) {
+      if (active) setRoom(r);
+    }
 
-    socket.on("server:error", ({ message }) => {
-      console.error("Server error:", message);
-    });
+    socket.on("connect", onConnect);
+    socket.on("server:room:state", onRoomState);
+    socket.on("server:room:created", onRoomCreated);
+    socket.on("server:room:joined", onRoomJoined);
+    socket.on("server:error", ({ message }) => console.error("Server error:", message));
 
     return () => {
-      initialized.current = false;
-      if (!isNew && room) {
+      active = false;
+      socket.off("connect", onConnect);
+      socket.off("server:room:state", onRoomState);
+      socket.off("server:room:created", onRoomCreated);
+      socket.off("server:room:joined", onRoomJoined);
+      socket.off("server:error");
+      if (!isNew && player) {
         socket.emit("client:room:leave", { roomId, playerId: player.id });
       }
-      socket.removeAllListeners();
       socket.disconnect();
       setConnection("disconnected");
     };
@@ -78,7 +78,6 @@ export function GomokuRoom({ roomId }: GomokuRoomProps) {
     navigator.clipboard.writeText(window.location.href);
   }
 
-  const displayRoomId = isNew ? "…" : roomId;
   const isWaiting = !room || room.status === "waiting";
   const players = room?.players ?? [];
 
@@ -89,7 +88,9 @@ export function GomokuRoom({ roomId }: GomokuRoomProps) {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-moss">Gomoku</p>
-              <h1 className="mt-1 text-3xl font-semibold">Room {displayRoomId}</h1>
+              <h1 className="mt-1 text-3xl font-semibold">
+                Room {isNew ? "…" : roomId}
+              </h1>
             </div>
             {!isNew && (
               <button
@@ -130,16 +131,8 @@ export function GomokuRoom({ roomId }: GomokuRoomProps) {
           </div>
 
           <div className="space-y-3">
-            <PlayerSlot
-              label="Black"
-              player={players[0]}
-              isMe={players[0]?.id === me?.id}
-            />
-            <PlayerSlot
-              label="White"
-              player={players[1]}
-              isMe={players[1]?.id === me?.id}
-            />
+            <PlayerSlot label="Black" player={players[0]} isMe={players[0]?.id === me?.id} />
+            <PlayerSlot label="White" player={players[1]} isMe={players[1]?.id === me?.id} />
           </div>
 
           {isNew && (
