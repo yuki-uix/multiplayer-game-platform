@@ -1,0 +1,24 @@
+{
+  "name": "multiplayer-game-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MVP web platform for lightweight multiplayer browser games.",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @mgp/web --filter @mgp/server dev",
+    "dev:web": "pnpm --filter @mgp/web dev",
+    "dev:server": "pnpm --filter @mgp/server dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.18.2",
+    "typescript": "^5.7.2"
+  }
+}
