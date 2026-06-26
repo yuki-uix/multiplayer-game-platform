@@ -156,7 +156,13 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
         const card = player.hand.find((c) => c.id === action.cardId);
         if (!card) return false;
         if (card.kind !== "martyr" && card.kind !== "redirector") return false;
-        if (card.kind === "redirector" && !action.redirectTargetId) return false;
+        if (card.kind === "redirector") {
+          if (!action.redirectTargetId) return false;
+          // Fix #2: redirectTargetId must be a different alive player
+          const redirectTarget = state.players.find((p) => p.playerId === action.redirectTargetId);
+          if (!redirectTarget || !redirectTarget.alive) return false;
+          if (action.redirectTargetId === playerId) return false;
+        }
         return true;
       }
 
@@ -287,6 +293,7 @@ function resolvePass2(
       currentPhase: "spy",
       playedThisPhase: [],
       doneByPlayer: new Set(),
+      resolvedCount: 0,
       pendingReaction: null,
     },
   };
@@ -346,14 +353,19 @@ function advanceNightIfAllDone(state: NinjaGameState): NinjaGameState {
   const allDone = alivePlayers.every((id) => night.doneByPlayer.has(id));
   if (!allDone) return state;
 
-  // Fix #2: resolve all played cards in number order
+  // Resolve played cards in number order, starting after already-settled entries
   const sorted = [...night.playedThisPhase].sort((a, b) => a.card.number - b.card.number);
   let resolved = state;
 
-  for (const entry of sorted) {
-    resolved = resolveCardEffect(resolved, entry);
-    // If a reaction window opened, stop and wait
-    if (resolved.night?.pendingReaction) return resolved;
+  for (let i = night.resolvedCount; i < sorted.length; i++) {
+    resolved = resolveCardEffect(resolved, sorted[i]);
+    if (resolved.night?.pendingReaction) {
+      // Record that the next entry to process after reaction is i+1
+      return {
+        ...resolved,
+        night: { ...resolved.night!, resolvedCount: i + 1 },
+      };
+    }
   }
 
   const next = nextNightPhase(night.currentPhase);
@@ -364,6 +376,7 @@ function advanceNightIfAllDone(state: NinjaGameState): NinjaGameState {
         currentPhase: next,
         playedThisPhase: [],
         doneByPlayer: new Set(),
+        resolvedCount: 0,
         pendingReaction: null,
       },
     };

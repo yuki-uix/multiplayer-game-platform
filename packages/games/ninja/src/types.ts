@@ -89,6 +89,12 @@ export type NightState = {
   /** Players who have declared done for the current sub-phase (pass or played) */
   doneByPlayer: Set<string>;
   /**
+   * How many entries in sorted playedThisPhase have already been fully resolved.
+   * advanceNightIfAllDone resumes from this index so reaction handling never
+   * re-processes already-settled attack entries.
+   */
+  resolvedCount: number;
+  /**
    * Non-null when a kill is pending and the target may react.
    * Resolution is paused until the target plays a reaction card or passes.
    */
