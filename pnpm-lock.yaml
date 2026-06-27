@@ -35,6 +35,9 @@ importers:
       '@mgp/gomoku':
         specifier: workspace:*
         version: link:../../packages/games/gomoku
+      '@mgp/ninja':
+        specifier: workspace:*
+        version: link:../../packages/games/ninja
       '@mgp/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -99,6 +102,16 @@ importers:
         version: 5.9.3
 
   packages/games/gomoku:
+    dependencies:
+      '@mgp/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/games/ninja:
     dependencies:
       '@mgp/shared':
         specifier: workspace:*

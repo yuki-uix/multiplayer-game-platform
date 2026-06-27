@@ -1,4 +1,4 @@
-export type GameKind = "gomoku";
+export type GameKind = "gomoku" | "ninja";
 
 export type Player = {
   id: string;
