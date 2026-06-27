@@ -46,8 +46,10 @@ function cancelRoomCleanup(roomId: string) {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function createRoom(game: GameKind): RoomRecord {
-  const engine = gameRegistry[game]();
+export function createRoom(game: GameKind): RoomRecord | undefined {
+  const factory = gameRegistry[game];
+  if (!factory) return undefined;
+  const engine = factory();
   const room: RoomRecord = {
     id: crypto.randomUUID().slice(0, 8),
     game,
@@ -60,6 +62,10 @@ export function createRoom(game: GameKind): RoomRecord {
   rooms.set(room.id, room);
   scheduleRoomCleanup(room.id);
   return room;
+}
+
+export function isKnownGame(game: unknown): game is GameKind {
+  return typeof game === "string" && game in gameRegistry;
 }
 
 export function getRoom(roomId: string): RoomRecord | undefined {
@@ -116,7 +122,12 @@ export function applyGameAction(
     return { ok: false, error: "Game not started" };
   }
 
-  const isValid = room.engine.isActionValid(room.gameState, action, playerId);
+  let isValid: boolean;
+  try {
+    isValid = room.engine.isActionValid(room.gameState, action, playerId);
+  } catch {
+    return { ok: false, error: "Invalid action" };
+  }
   if (!isValid) return { ok: false, error: "Invalid action" };
 
   room.gameState = room.engine.applyAction(room.gameState, action, playerId);

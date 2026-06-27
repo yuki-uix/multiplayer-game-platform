@@ -7,6 +7,7 @@ import {
   leaveRoom,
   applyGameAction,
   getPlayerGameState,
+  isKnownGame,
 } from "../rooms/room-store";
 
 type PlatformServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -49,7 +50,15 @@ export function registerRoomSockets(io: PlatformServer) {
     // ── Room creation ────────────────────────────────────────────────────────
 
     socket.on("client:room:create", ({ game }, acknowledge) => {
+      if (!isKnownGame(game)) {
+        socket.emit("server:error", { message: "Unknown game" });
+        return;
+      }
       const room = createRoom(game);
+      if (!room) {
+        socket.emit("server:error", { message: "Failed to create room" });
+        return;
+      }
       socket.join(room.id);
       acknowledge?.({ roomId: room.id });
       socket.emit("server:room:created", { room });
@@ -93,8 +102,13 @@ export function registerRoomSockets(io: PlatformServer) {
 
     // ── Game action ───────────────────────────────────────────────────────────
 
-    socket.on("client:game:action", ({ roomId, action, playerId }) => {
-      const result = applyGameAction(roomId, playerId, action);
+    socket.on("client:game:action", ({ roomId, action }) => {
+      const entry = socketPlayerMap.get(socket.id);
+      if (!entry || entry.roomId !== roomId) {
+        socket.emit("server:error", { message: "Not in room" });
+        return;
+      }
+      const result = applyGameAction(roomId, entry.playerId, action);
       if (!result.ok) {
         socket.emit("server:error", { message: result.error });
         return;
