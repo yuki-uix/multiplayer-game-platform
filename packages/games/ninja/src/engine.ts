@@ -184,6 +184,8 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
       const isReveal =
         state.phase === "reveal" || state.phase === "round_end" || state.phase === "game_over";
 
+      const me = state.players.find((p) => p.playerId === playerId);
+
       return {
         phase: state.phase,
         round: state.round,
@@ -205,6 +207,14 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
               : -1,
           factionCard: isReveal && p.alive ? p.factionCard : null,
         })),
+        myFactionCard: me?.factionCard ?? null,
+        myHand: me?.hand ?? [],
+        myDraftOptions: (() => {
+          if (!state.draft) return null;
+          // Return null once the player has submitted their pick for this pass
+          if (playerId in state.draft.pickedByPlayer) return null;
+          return state.draft.pendingByPlayer[playerId] ?? null;
+        })(),
       };
     },
   };
