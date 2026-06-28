@@ -62,6 +62,16 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
       }
     });
 
+    socket.on("disconnect", (reason) => {
+      if (reason === "io client disconnect") return;
+      setConnection("dropped");
+      // Socket.IO won't auto-reconnect when the server explicitly disconnects the client;
+      // manually reconnect so the banner copy ("正在重连") stays accurate.
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+    });
+
     socket.on("server:room:state", ({ room: r }) => setRoom(r));
     socket.on("server:room:created", ({ room: r }) => setRoom(r));
     socket.on("server:room:joined", ({ room: r }) => setRoom(r));
@@ -93,7 +103,8 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
   const isWaiting = !room || room.status === "waiting";
 
   return (
-    <main className="min-h-screen bg-paper px-4 py-6 sm:px-8">
+    <main className={`min-h-screen bg-paper px-4 sm:px-8 ${connection === "dropped" ? "pt-14 pb-6" : "py-6"}`}>
+      {connection === "dropped" && <DisconnectBanner />}
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_280px]">
 
         {/* ── Main panel ──────────────────────────────────────────────── */}
@@ -141,8 +152,8 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
         <aside className="order-first lg:order-last rounded-lg border border-ink/10 bg-white p-5 shadow-sm self-start">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">玩家</h2>
-            <span className="text-xs text-ink/40">
-              {connection === "connected" ? "● 在线" : "○ 连接中"}
+            <span className={`text-xs ${connection === "dropped" ? "text-coral" : "text-ink/40"}`}>
+              {connection === "connected" ? "● 在线" : connection === "dropped" ? "● 已断线" : "○ 连接中"}
             </span>
           </div>
           <div className="flex flex-col gap-2">
@@ -600,6 +611,23 @@ function FactionBadge({ faction, rank }: { faction: string; rank?: number }) {
     <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-semibold ${colors[faction] ?? "bg-ink/10 text-ink"}`}>
       {labels[faction] ?? faction}{rank ? ` · ${rank}` : ""}
     </span>
+  );
+}
+
+function DisconnectBanner() {
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 bg-coral px-4 py-3 text-sm font-semibold text-white shadow-md sm:px-8">
+      <div className="flex items-center gap-2">
+        <span className="animate-pulse">●</span>
+        <span>连接已断开，正在重连…</span>
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="rounded border border-white/40 px-3 py-1 text-xs font-semibold hover:bg-white/10"
+      >
+        立即刷新
+      </button>
+    </div>
   );
 }
 

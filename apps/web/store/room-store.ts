@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Player, RoomState } from "@mgp/shared";
 
-type ConnectionStatus = "disconnected" | "connecting" | "connected";
+type ConnectionStatus = "disconnected" | "connecting" | "connected" | "dropped";
 
 type RoomStore = {
   connection: ConnectionStatus;
