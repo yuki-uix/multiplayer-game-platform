@@ -63,8 +63,12 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
     });
 
     socket.on("disconnect", (reason) => {
-      if (reason !== "io client disconnect") {
-        setConnection("dropped");
+      if (reason === "io client disconnect") return;
+      setConnection("dropped");
+      // Socket.IO won't auto-reconnect when the server explicitly disconnects the client;
+      // manually reconnect so the banner copy ("正在重连") stays accurate.
+      if (reason === "io server disconnect") {
+        socket.connect();
       }
     });
 
