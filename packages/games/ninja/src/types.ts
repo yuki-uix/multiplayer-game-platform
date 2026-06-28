@@ -99,6 +99,8 @@ export type NightState = {
    * Resolution is paused until the target plays a reaction card or passes.
    */
   pendingReaction: PendingReaction | null;
+  /** playerIds whose faction card is publicly known this round (trickster-3/5 effect) */
+  publicFactionReveals: string[];
 };
 
 // ── Round phases ──────────────────────────────────────────────────────────────
@@ -110,6 +112,15 @@ export type RoundPhase =
   | "reveal"           // faction reveal + scoring
   | "round_end"        // distribute tokens, check win
   | "game_over";
+
+// ── Private reveal (spy / hermit effects) ────────────────────────────────────
+
+export type PrivateReveal = {
+  receiverId: string;
+  targetId: string;
+  factionCard: FactionCard;
+  ninjaCard?: NinjaCard; // hermit only: one random ninja card from target's hand
+};
 
 // ── Full game state ───────────────────────────────────────────────────────────
 
@@ -123,6 +134,8 @@ export type NinjaGameState = {
   discardPile: NinjaCard[];        // face-down discards from draft
   honorBag: HonorToken[];          // remaining tokens to draw from
   winners: string[] | null;        // playerId(s) when game_over
+  /** Private info revealed to specific players this round; cleared on new round */
+  privateReveals: PrivateReveal[];
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -189,4 +202,6 @@ export type NinjaPublicState = {
   myHand: NinjaCard[];
   /** Cards available to pick in the current draft pass; null outside draft phase */
   myDraftOptions: NinjaCard[] | null;
+  /** Private reveal from spy/hermit effect this round; null if none */
+  myPrivateReveal: { targetId: string; factionCard: FactionCard; ninjaCard?: NinjaCard } | null;
 };
