@@ -7,7 +7,7 @@ import { socket } from "../../lib/socket";
 import { getOrCreatePlayer } from "../../lib/player";
 import { useRoomStore } from "../../store/room-store";
 import { getCardDescription } from "@mgp/ninja";
-import type { NinjaPublicState, NinjaPublicPlayerView, NinjaCard, NightPhase } from "@mgp/ninja";
+import type { NinjaPublicState, NinjaPublicPlayerView, NinjaCard, NightPhase, FactionCard } from "@mgp/ninja";
 import type { Player } from "@mgp/shared";
 
 // ── Phase labels ──────────────────────────────────────────────────────────────
@@ -22,10 +22,16 @@ const PHASE_LABELS: Record<NightPhase, string> = {
 
 // ── Kill cards that require a target ────────────────────────────────────────
 
-const KILL_CARD_IDS = new Set(["trickster-6"]);
+const TARGET_CARD_IDS = new Set(["trickster-3", "trickster-6"]);
 
 function requiresTarget(card: NinjaCard): boolean {
-  return card.kind === "blind_assassin" || card.kind === "master_ninja" || KILL_CARD_IDS.has(card.id);
+  return (
+    card.kind === "blind_assassin" ||
+    card.kind === "master_ninja" ||
+    card.kind === "spy" ||
+    card.kind === "hermit" ||
+    TARGET_CARD_IDS.has(card.id)
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -493,6 +499,11 @@ function NightPanel({
           <FactionBadge faction={state.myFactionCard.faction} rank={state.myFactionCard.rank} />
         </div>
       )}
+
+      {/* Private reveal from spy / hermit */}
+      {state.myPrivateReveal && (
+        <PrivateRevealBanner reveal={state.myPrivateReveal} allPlayers={allPlayers} />
+      )}
     </div>
   );
 }
@@ -611,6 +622,28 @@ function FactionBadge({ faction, rank }: { faction: string; rank?: number }) {
     <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-semibold ${colors[faction] ?? "bg-ink/10 text-ink"}`}>
       {labels[faction] ?? faction}{rank ? ` · ${rank}` : ""}
     </span>
+  );
+}
+
+function PrivateRevealBanner({
+  reveal,
+  allPlayers,
+}: {
+  reveal: { targetId: string; factionCard: FactionCard; ninjaCard?: NinjaCard };
+  allPlayers: Player[];
+}) {
+  const targetName = allPlayers.find((p) => p.id === reveal.targetId)?.displayName ?? reveal.targetId;
+  return (
+    <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm">
+      <p className="font-semibold text-amber-800">秘密情报（仅你可见）</p>
+      <p className="mt-1 text-amber-700">
+        {targetName} 的阵营：
+        <FactionBadge faction={reveal.factionCard.faction} rank={reveal.factionCard.rank} />
+      </p>
+      {reveal.ninjaCard && (
+        <p className="mt-1 text-amber-700">持有忍者牌：<span className="font-semibold">{reveal.ninjaCard.name}</span></p>
+      )}
+    </div>
   );
 }
 

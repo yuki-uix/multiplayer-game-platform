@@ -9,6 +9,7 @@ import {
   type HonorToken,
   type NightPhase,
   type PlayedCardEntry,
+  type PrivateReveal,
   type DraftPickAction,
   type NightPlayAction,
   type ReactionAction,
@@ -109,6 +110,7 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
         discardPile: [],
         honorBag,
         winners: null,
+        privateReveals: [],
       };
     },
 
@@ -133,7 +135,12 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
         const card = player.hand.find((c) => c.id === action.cardId);
         if (!card) return false;
         if (card.phase !== state.night.currentPhase) return false;
-        if (["blind_assassin", "master_ninja"].includes(card.kind) && !action.targetPlayerId) return false;
+        if (["blind_assassin", "master_ninja", "spy", "hermit"].includes(card.kind) && !action.targetPlayerId) return false;
+        if (card.id === "trickster-3" && !action.targetPlayerId) return false;
+        if (action.targetPlayerId) {
+          const t = state.players.find((p) => p.playerId === action.targetPlayerId);
+          if (!t || !t.alive || action.targetPlayerId === playerId) return false;
+        }
         return true;
       }
 
@@ -185,6 +192,11 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
         state.phase === "reveal" || state.phase === "round_end" || state.phase === "game_over";
 
       const me = state.players.find((p) => p.playerId === playerId);
+      const publicReveals = state.night?.publicFactionReveals ?? [];
+
+      const myReveal = [...state.privateReveals]
+        .reverse()
+        .find((r) => r.receiverId === playerId) ?? null;
 
       return {
         phase: state.phase,
@@ -205,16 +217,21 @@ export function createNinjaEngine(): GameEngine<NinjaGameState, NinjaAction> {
             p.playerId === playerId
               ? p.honorTokens.reduce((sum, t) => sum + t.value, 0)
               : -1,
-          factionCard: isReveal && p.alive ? p.factionCard : null,
+          factionCard:
+            (isReveal && p.alive) || publicReveals.includes(p.playerId)
+              ? p.factionCard
+              : null,
         })),
         myFactionCard: me?.factionCard ?? null,
         myHand: me?.hand ?? [],
         myDraftOptions: (() => {
           if (!state.draft) return null;
-          // Return null once the player has submitted their pick for this pass
           if (playerId in state.draft.pickedByPlayer) return null;
           return state.draft.pendingByPlayer[playerId] ?? null;
         })(),
+        myPrivateReveal: myReveal
+          ? { targetId: myReveal.targetId, factionCard: myReveal.factionCard, ninjaCard: myReveal.ninjaCard }
+          : null,
       };
     },
   };
@@ -305,6 +322,7 @@ function resolvePass2(
       doneByPlayer: new Set(),
       resolvedCount: 0,
       pendingReaction: null,
+      publicFactionReveals: [],
     },
   };
 }
@@ -388,6 +406,7 @@ function advanceNightIfAllDone(state: NinjaGameState): NinjaGameState {
         doneByPlayer: new Set(),
         resolvedCount: 0,
         pendingReaction: null,
+        publicFactionReveals: resolved.night!.publicFactionReveals,
       },
     };
   }
@@ -417,9 +436,58 @@ function resolveCardEffect(state: NinjaGameState, entry: PlayedCardEntry): Ninja
     return killPlayer(state, targetPlayerId);
   }
 
-  // spy / hermit / trickster effects are game-information actions:
-  // their resolution requires server-side private pushes, not state mutations here.
-  // Stubbed — effects will be implemented when server integration lands.
+  if (card.kind === "spy") {
+    if (!targetPlayerId) return state;
+    const target = state.players.find((p) => p.playerId === targetPlayerId);
+    if (!target?.factionCard) return state;
+    const reveal: PrivateReveal = { receiverId: playerId, targetId: targetPlayerId, factionCard: target.factionCard };
+    return { ...state, privateReveals: [...state.privateReveals, reveal] };
+  }
+
+  if (card.kind === "hermit") {
+    if (!targetPlayerId) return state;
+    const target = state.players.find((p) => p.playerId === targetPlayerId);
+    if (!target?.factionCard) return state;
+    const hand = target.hand;
+    const ninjaCard = hand.length > 0 ? hand[Math.floor(Math.random() * hand.length)] : undefined;
+    const reveal: PrivateReveal = { receiverId: playerId, targetId: targetPlayerId, factionCard: target.factionCard, ninjaCard };
+    return { ...state, privateReveals: [...state.privateReveals, reveal] };
+  }
+
+  if (card.kind === "trickster") {
+    const night = state.night!;
+
+    if (card.id === "trickster-3") {
+      // 捣乱者: publicly reveal target's faction to everyone
+      if (!targetPlayerId) return state;
+      return {
+        ...state,
+        night: { ...night, publicFactionReveals: [...night.publicFactionReveals, targetPlayerId] },
+      };
+    }
+
+    if (card.id === "trickster-5") {
+      // 小偷: reveal own faction publicly; steal one token from the richest living player with more tokens
+      let newState: NinjaGameState = {
+        ...state,
+        night: { ...night, publicFactionReveals: [...night.publicFactionReveals, playerId] },
+      };
+      const me = getPlayer(newState, playerId);
+      const myCount = me.honorTokens.length;
+      const victim = [...newState.players]
+        .filter((p) => p.playerId !== playerId && p.alive && p.honorTokens.length > myCount)
+        .sort((a, b) => b.honorTokens.length - a.honorTokens.length)[0];
+      if (victim) {
+        const stolenToken = victim.honorTokens[victim.honorTokens.length - 1];
+        newState = updatePlayer(newState, victim.playerId, { honorTokens: victim.honorTokens.slice(0, -1) });
+        newState = updatePlayer(newState, playerId, { honorTokens: [...getPlayer(newState, playerId).honorTokens, stolenToken] });
+      }
+      return newState;
+    }
+
+    return state; // trickster-1/2/4 deferred
+  }
+
   return state;
 }
 
@@ -587,5 +655,6 @@ function startNewRound(state: NinjaGameState): NinjaGameState {
     draft: { pass: 1, pendingByPlayer, pickedByPlayer: {} },
     night: null,
     discardPile: [],
+    privateReveals: [],
   };
 }
