@@ -139,10 +139,10 @@ export const CARD_DESCRIPTIONS_BY_KIND: Record<NinjaCardKind, CardDescription> =
     tip: "不能响应审判者（骗徒·6）的击杀。",
   },
   redirector: {
-    title: "殉道者（反应牌）",
+    title: "还击者（反应牌）",
     phase: "响应盲眼刺客或上忍的刺杀",
-    effect: "当你被盲眼刺客或上忍选为击杀目标时，公开此牌，你死亡但获得一枚 Honor Token。",
-    tip: "把被杀变成得分机会。适合已被怀疑、难以活到回合末时使用。",
+    effect: "当你被盲眼刺客或上忍选为击杀目标时，公开此牌，将击杀重定向到另一名你指定的玩家，你安然无恙。",
+    tip: "把刀借刀杀人。注意不能将攻击重定向给已死亡的玩家。",
   },
   boss: {
     title: "幕后主使",
