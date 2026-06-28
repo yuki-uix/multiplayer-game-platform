@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { socket } from "../../lib/socket";
-import { getOrCreatePlayer } from "../../lib/player";
+import { getOrCreatePlayer, isNameReady, savePlayerName } from "../../lib/player";
 import { useRoomStore } from "../../store/room-store";
 import { getCardDescription } from "@mgp/ninja";
 import type { NinjaPublicState, NinjaPublicPlayerView, NinjaCard, NightPhase, FactionCard } from "@mgp/ninja";
@@ -45,8 +45,10 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
 
   const { connection, room, me, setConnection, setRoom, setMe } = useRoomStore();
   const [gameState, setGameState] = useState<NinjaPublicState | null>(null);
+  const [nameReady, setNameReady] = useState(() => isNameReady());
 
   useEffect(() => {
+    if (!nameReady) return; // wait until name is confirmed before connecting
     if (initialized.current) return;
     initialized.current = true;
 
@@ -94,7 +96,18 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
       setConnection("disconnected");
       setGameState(null);
     };
-  }, []);
+  }, [nameReady]);
+
+  if (!nameReady) {
+    return (
+      <NamePrompt
+        onConfirm={(name) => {
+          savePlayerName(name);
+          setNameReady(true);
+        }}
+      />
+    );
+  }
 
   function sendAction(action: unknown) {
     if (!me) return;
@@ -644,6 +657,43 @@ function PrivateRevealBanner({
         <p className="mt-1 text-amber-700">持有忍者牌：<span className="font-semibold">{reveal.ninjaCard.name}</span></p>
       )}
     </div>
+  );
+}
+
+function NamePrompt({ onConfirm }: { onConfirm: (name: string) => void }) {
+  const [value, setValue] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onConfirm(value);
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-paper px-6">
+      <div className="w-full max-w-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-moss">忍者之夜</p>
+        <h1 className="mt-3 text-3xl font-semibold">你叫什么名字？</h1>
+        <p className="mt-2 text-sm text-ink/55">队友会在游戏中看到这个名字</p>
+        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3">
+          <input
+            autoFocus
+            type="text"
+            placeholder="输入你的名字…"
+            maxLength={20}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-full rounded-lg border border-ink/20 bg-white px-4 py-3 text-base outline-none focus:border-ink/50 min-h-[48px]"
+          />
+          <button
+            type="submit"
+            disabled={!value.trim()}
+            className="rounded-lg bg-coral px-6 py-3 text-base font-semibold text-white hover:bg-coral/90 disabled:opacity-40 transition-colors min-h-[48px]"
+          >
+            进入房间
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }
 

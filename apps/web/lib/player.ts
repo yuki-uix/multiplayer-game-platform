@@ -1,6 +1,7 @@
 import type { Player } from "@mgp/shared";
 
 const PLAYER_KEY = "mgp:player";
+const NAME_READY_KEY = "mgp:name-ready";
 
 function generateId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -30,5 +31,21 @@ export function getOrCreatePlayer(): Player {
 
   const player: Player = { id: generateId(), displayName: generateName() };
   localStorage.setItem(PLAYER_KEY, JSON.stringify(player));
+  return player;
+}
+
+/** Returns true if the player has already confirmed their display name. */
+export function isNameReady(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(NAME_READY_KEY) === "1";
+}
+
+/** Save a confirmed display name; keeps the existing playerId. */
+export function savePlayerName(name: string): Player {
+  const trimmed = name.trim() || generateName();
+  const existing = getOrCreatePlayer();
+  const player: Player = { ...existing, displayName: trimmed };
+  localStorage.setItem(PLAYER_KEY, JSON.stringify(player));
+  localStorage.setItem(NAME_READY_KEY, "1");
   return player;
 }
