@@ -47,18 +47,8 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
   const [gameState, setGameState] = useState<NinjaPublicState | null>(null);
   const [nameReady, setNameReady] = useState(() => isNameReady());
 
-  if (!nameReady) {
-    return (
-      <NamePrompt
-        onConfirm={(name) => {
-          savePlayerName(name);
-          setNameReady(true);
-        }}
-      />
-    );
-  }
-
   useEffect(() => {
+    if (!nameReady) return; // wait until name is confirmed before connecting
     if (initialized.current) return;
     initialized.current = true;
 
@@ -106,7 +96,18 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
       setConnection("disconnected");
       setGameState(null);
     };
-  }, []);
+  }, [nameReady]);
+
+  if (!nameReady) {
+    return (
+      <NamePrompt
+        onConfirm={(name) => {
+          savePlayerName(name);
+          setNameReady(true);
+        }}
+      />
+    );
+  }
 
   function sendAction(action: unknown) {
     if (!me) return;
