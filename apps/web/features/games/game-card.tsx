@@ -4,9 +4,10 @@ type GameCardProps = {
   title: string;
   description: string;
   href: string;
+  rulesHref?: string;
 };
 
-export function GameCard({ title, description, href }: GameCardProps) {
+export function GameCard({ title, description, href, rulesHref }: GameCardProps) {
   return (
     <article className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
       <div className="flex aspect-[4/3] items-center justify-center rounded-md bg-paper">
@@ -25,12 +26,22 @@ export function GameCard({ title, description, href }: GameCardProps) {
           <h2 className="text-xl font-semibold">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-ink/65">{description}</p>
         </div>
-        <Link
-          className="rounded-md bg-coral px-4 py-2 text-sm font-semibold text-white transition hover:bg-coral/90"
-          href={href}
-        >
-          Create Room
-        </Link>
+        <div className="flex items-center gap-2">
+          {rulesHref && (
+            <Link
+              className="rounded-md border border-ink/15 px-3 py-2 text-sm text-ink/60 transition hover:bg-ink/5"
+              href={rulesHref}
+            >
+              规则
+            </Link>
+          )}
+          <Link
+            className="rounded-md bg-coral px-4 py-2 text-sm font-semibold text-white transition hover:bg-coral/90"
+            href={href}
+          >
+            Create Room
+          </Link>
+        </div>
       </div>
     </article>
   );

@@ -17,4 +17,10 @@ export type {
   NightPassAction,
   ReactionAction,
 } from "./types";
-export { NINJA_CARDS, NIGHT_PHASE_ORDER, HONOR_TOKEN_VALUES } from "./cards";
+export {
+  NINJA_CARDS,
+  NIGHT_PHASE_ORDER,
+  HONOR_TOKEN_VALUES,
+  getCardDescription,
+} from "./cards";
+export type { CardDescription } from "./cards";
