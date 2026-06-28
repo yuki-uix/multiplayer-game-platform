@@ -264,7 +264,7 @@ function DraftPanel({ state, onAction }: { state: NinjaPublicState; onAction: (a
       )}
 
       {/* Current hand */}
-      {state.myHand.length > 0 && (
+      {(state.myHand ?? []).length > 0 && (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">我的手牌</p>
           <div className="flex gap-3 flex-wrap">
@@ -297,9 +297,12 @@ function NightPanel({
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
 
   const currentPhase = state.currentNightPhase;
-  const myCards = state.myHand.filter((c) => c.phase === currentPhase);
+  const myHand = state.myHand ?? [];
+  const myCards = myHand.filter((c) => c.phase === currentPhase);
   const meAsPlayer = state.players.find((p) => p.playerId === myId);
   const isDead = meAsPlayer ? !meAsPlayer.alive : false;
+  const pendingReaction = state.pendingReaction;
+  const iAmTarget = pendingReaction?.targetId === myId;
 
   function playCard() {
     if (!selectedCard) return;
@@ -321,6 +324,41 @@ function NightPanel({
 
   const needsTarget = selectedCard && requiresTarget(selectedCard);
   const canPlay = selectedCard && (!needsTarget || selectedTarget);
+
+  // Reaction window: game is paused until target responds
+  if (pendingReaction) {
+    const attackerName = allPlayers.find((p) => p.id === pendingReaction.attackerId)?.displayName ?? "某人";
+    return (
+      <div className="flex flex-col gap-4">
+        <div className={`rounded-xl border px-5 py-5 ${iAmTarget ? "border-coral/40 bg-coral/5" : "border-ink/10 bg-white"}`}>
+          <p className="font-semibold">
+            {iAmTarget ? "你被锁定为击杀目标！" : `等待 ${attackerName} 的目标做出反应…`}
+          </p>
+          <p className="mt-1 text-sm text-ink/60">
+            {iAmTarget
+              ? `${attackerName} 对你出了刺杀牌。反应牌功能尚未开放，点击继续即跳过。`
+              : "本轮行动暂停，等待结果公布。"}
+          </p>
+          {iAmTarget && (
+            <button
+              onClick={() => onAction({ type: "night_pass" })}
+              className="mt-4 rounded-md bg-coral px-5 py-2 text-sm font-semibold text-white"
+            >
+              继续（跳过反应）
+            </button>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">我的手牌</p>
+          <div className="flex gap-3 flex-wrap">
+            {myHand.map((card) => (
+              <CardChip key={card.id} card={card} dimmed />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -428,7 +466,7 @@ function NightPanel({
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">我的手牌</p>
         <div className="flex gap-3 flex-wrap">
-          {state.myHand.map((card) => (
+          {myHand.map((card) => (
             <CardChip key={card.id} card={card} dimmed={card.phase !== currentPhase} />
           ))}
           {state.myHand.length === 0 && (
