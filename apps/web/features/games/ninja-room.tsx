@@ -108,14 +108,14 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
             <div className="flex gap-2">
               <Link
                 href="/game/ninja/rules"
-                className="rounded-md border border-ink/15 px-3 py-2 text-sm text-ink/60 hover:bg-ink/5"
+                className="inline-flex items-center rounded-md border border-ink/15 px-3 py-2 text-sm text-ink/60 hover:bg-ink/5 min-h-[44px]"
               >
                 规则
               </Link>
               {!isNew && (
                 <button
                   onClick={copyLink}
-                  className="rounded-md border border-ink/15 bg-white px-4 py-2 text-sm font-semibold"
+                  className="rounded-md border border-ink/15 bg-white px-4 py-2 text-sm font-semibold min-h-[44px]"
                 >
                   复制邀请链接
                 </button>
@@ -138,7 +138,7 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
         </div>
 
         {/* ── Sidebar ─────────────────────────────────────────────────── */}
-        <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm self-start">
+        <aside className="order-first lg:order-last rounded-lg border border-ink/10 bg-white p-5 shadow-sm self-start">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">玩家</h2>
             <span className="text-xs text-ink/40">
@@ -342,7 +342,7 @@ function NightPanel({
           {iAmTarget && (
             <button
               onClick={() => onAction({ type: "night_pass" })}
-              className="mt-4 rounded-md bg-coral px-5 py-2 text-sm font-semibold text-white"
+              className="mt-4 rounded-md bg-coral px-5 py-2 text-sm font-semibold text-white min-h-[44px]"
             >
               继续（跳过反应）
             </button>
@@ -390,7 +390,7 @@ function NightPanel({
             <p className="text-sm text-ink/60 flex-1">本阶段无匹配手牌。</p>
             <button
               onClick={pass}
-              className="rounded-md border border-ink/15 px-4 py-2 text-sm font-semibold text-ink/60 hover:bg-ink/5"
+              className="rounded-md border border-ink/15 px-4 py-2 text-sm font-semibold text-ink/60 hover:bg-ink/5 min-h-[44px]"
             >
               Pass
             </button>
@@ -398,7 +398,7 @@ function NightPanel({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink/70">选择一张牌打出，或直接 Pass：</p>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-3 sm:flex-wrap">
               {myCards.map((card) => (
                 <button
                   key={card.id}
@@ -406,7 +406,7 @@ function NightPanel({
                     setSelectedCard(card);
                     setSelectedTarget(null);
                   }}
-                  className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
+                  className={`rounded-lg border px-4 py-3 text-left text-sm transition min-h-[56px] ${
                     selectedCard?.id === card.id
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/15 bg-paper hover:bg-ink/5"
@@ -429,7 +429,7 @@ function NightPanel({
                       <button
                         key={p.playerId}
                         onClick={() => setSelectedTarget(p.playerId)}
-                        className={`rounded-md border px-3 py-1.5 text-sm transition ${
+                        className={`rounded-md border px-3 py-2 text-sm transition min-h-[44px] ${
                           selectedTarget === p.playerId
                             ? "border-coral bg-coral text-white"
                             : "border-ink/15 bg-paper hover:bg-ink/5"
@@ -447,13 +447,13 @@ function NightPanel({
               <button
                 onClick={playCard}
                 disabled={!canPlay}
-                className="rounded-md bg-ink px-5 py-2 text-sm font-semibold text-paper disabled:opacity-40"
+                className="rounded-md bg-ink px-5 py-2 text-sm font-semibold text-paper disabled:opacity-40 min-h-[44px]"
               >
                 打出
               </button>
               <button
                 onClick={pass}
-                className="rounded-md border border-ink/15 px-4 py-2 text-sm text-ink/60 hover:bg-ink/5"
+                className="rounded-md border border-ink/15 px-4 py-2 text-sm text-ink/60 hover:bg-ink/5 min-h-[44px]"
               >
                 Pass
               </button>
