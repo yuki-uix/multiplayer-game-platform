@@ -202,11 +202,41 @@ export function NinjaRoom({ roomId }: NinjaRoomProps) {
 
 function WaitingPanel({ playerCount }: { playerCount: number }) {
   return (
-    <div className="rounded-xl border border-ink/10 bg-white px-5 py-6 text-center text-ink/60">
-      <p className="text-lg font-medium">等待玩家加入</p>
-      <p className="mt-1 text-sm">
-        已加入 {playerCount} / 4（最少）人，分享链接邀请队友
-      </p>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-xl border border-ink/10 bg-white px-5 py-6 text-center text-ink/60">
+        <p className="text-lg font-medium">等待玩家加入</p>
+        <p className="mt-1 text-sm">
+          已加入 {playerCount} / 4（最少）人，分享链接邀请队友
+        </p>
+      </div>
+      <RulesQuickRef />
+    </div>
+  );
+}
+
+function RulesQuickRef() {
+  return (
+    <div className="rounded-xl border border-ink/10 bg-white px-5 py-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/40">规则速览</p>
+      <div className="mt-4 flex flex-col gap-3">
+        {[
+          { phase: "选牌", desc: "每人从 3 张里选 2 张忍者牌，组成手牌。" },
+          { phase: "夜晚", desc: "按密探→隐士→骗徒→盲眼刺客→上忍顺序行动。可出牌或 Pass。" },
+          { phase: "结算", desc: "翻开阵营，鹤/莲派排名高者获得荣誉 Token。先达 10 分者获胜。" },
+          { phase: "阵营", desc: "鹤派与莲花派是对立阵营；浪人只要活到回合末即可得分。" },
+        ].map(({ phase, desc }) => (
+          <div key={phase} className="flex gap-3 text-sm">
+            <span className="w-16 flex-shrink-0 font-semibold text-moss">{phase}</span>
+            <span className="text-ink/65 leading-relaxed">{desc}</span>
+          </div>
+        ))}
+      </div>
+      <Link
+        href="/game/ninja/rules"
+        className="mt-4 inline-block text-xs text-ink/40 hover:text-ink/70 transition-colors"
+      >
+        查看完整规则 →
+      </Link>
     </div>
   );
 }
@@ -583,12 +613,20 @@ function GameOverPanel({
             获胜者：{winnerNames.join("、")}
           </p>
         )}
-        <Link
-          href="/"
-          className="mt-5 inline-block rounded-md bg-coral px-6 py-2 text-sm font-semibold text-white"
-        >
-          返回首页
-        </Link>
+        <div className="mt-5 flex justify-center gap-3">
+          <Link
+            href="/game/ninja/new"
+            className="inline-flex items-center rounded-md bg-coral px-6 py-2.5 text-sm font-semibold text-white hover:bg-coral/90 transition-colors min-h-[44px]"
+          >
+            再来一局
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-md border border-ink/15 px-5 py-2.5 text-sm text-ink/60 hover:bg-ink/5 transition-colors min-h-[44px]"
+          >
+            返回首页
+          </Link>
+        </div>
       </div>
       <RevealPanel state={state} allPlayers={allPlayers} />
     </div>
