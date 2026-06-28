@@ -181,4 +181,12 @@ export type NinjaPublicState = {
   draftPendingCount: number;
   /** Non-null when a reaction window is open; only the target may act */
   pendingReaction: PendingReaction | null;
+
+  // ── Private fields — visible to the requesting player only ───────────────
+  /** Player's own faction card (always visible to self) */
+  myFactionCard: FactionCard | null;
+  /** Player's current hand (2 cards after draft; used during night phase) */
+  myHand: NinjaCard[];
+  /** Cards available to pick in the current draft pass; null outside draft phase */
+  myDraftOptions: NinjaCard[] | null;
 };

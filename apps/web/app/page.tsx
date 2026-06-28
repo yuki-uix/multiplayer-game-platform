@@ -22,6 +22,12 @@ export default function HomePage() {
             description="15x15 five-in-a-row for two players."
             href="/game/gomoku/new"
           />
+          <GameCard
+            title="忍者之夜"
+            description="4–11 人隐藏身份推理派对游戏。"
+            href="/game/ninja/new"
+            rulesHref="/game/ninja/rules"
+          />
         </div>
       </section>
     </main>
