@@ -60,9 +60,9 @@ const gameRegistry: Record<GameKind, () => AnyEngine> = {
 };
 ```
 
-**Server-side identity**
+**Server-side identity for game actions**
 
-`playerId` is never trusted from the client. The server maintains `Map<socketId, { roomId, playerId }>` and reads from it on every action. A client cannot spoof another player's identity.
+When a player joins, they supply their own `playerId` (a locally-generated UUID stored in `localStorage`) — this is trusted by design and enables reconnect. Once joined, however, the server records the mapping in `Map<socketId, { roomId, playerId }>` and reads **only from that map** when processing game actions. The client-supplied `playerId` field in action payloads is ignored entirely, so a connected client cannot act as a different player mid-game.
 
 **Graceful disconnect**
 
@@ -78,7 +78,7 @@ A hidden-identity game with structured asymmetric information.
 
 1. **Draft** — each player is dealt 3 ninja cards and picks 2 across two passes (snake draft). Cards are private.
 2. **Night** — five sub-phases resolve in fixed order: Spy → Hermit → Trickster → Blind Assassin → Master Ninja. Players play a matching card or pass.
-3. **Reveal** — faction cards flip; the winning faction earns Honor Tokens. First player to 10 points wins.
+3. **Reveal** — faction cards flip; the winning faction earns Honor Tokens. At round end, if any player has reached ≥ 10 Honor Points, the player with the highest score wins (tied scores share the win).
 
 **Implemented card effects**
 
